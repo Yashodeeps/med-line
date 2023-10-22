@@ -1,0 +1,1 @@
+export const OPENAI_KEY = "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";

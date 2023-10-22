@@ -4,16 +4,20 @@ import { useState, useRef } from 'react';
 import { checkValidData } from '../utils/validation';
 import { auth } from '../utils/firebase';
 import {createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
-import { Navigate, useNavigate } from 'react-router-dom';
-
+import {useNavigate } from 'react-router-dom';
+import { updateProfile } from "firebase/auth";
+import { useDispatch } from 'react-redux';
+import { addUser } from '../utils/userSlice';
 
 const Login = () => {
     const [isSignedInForm, setIsSignedInForm] = useState(true);
     const [errorMessage, setErrorMessage]= useState(null)
     const navigate = useNavigate();
+    const dispatch = useDispatch();
 
     const email = useRef(null);
     const password = useRef(null);
+    const displayName = useRef(null);
 
 
     function handleToggle(){
@@ -35,8 +39,24 @@ const Login = () => {
             .then((userCredential) => {
               // Signed up 
               const user = userCredential.user;
+
+              updateProfile(user, {
+                displayName: displayName.current.value, photoURL: "/"
+              }).then(() => {
+                // Profile updated!
+                const {uid, email, displayName} = auth.currentUser; //initially it was user but we have to update the value form the updated info which is in the auth
+                dispatch(addUser({
+                uid: uid,
+                email: email,
+                displayName: displayName,
+              }));
+                navigate("/Dashboard")
+              }).catch((error) => {
+                // An error occurred
+                setErrorMessage(error.message)
+              });
+
               console.log(user);
-              navigate("/Dashboard")
               // ...
             })
             .catch((error) => {
@@ -78,14 +98,14 @@ const Login = () => {
             <h1 className='py-4 text-3xl font-bold'>{isSignedInForm ? "Sign In" : "Sign Up"}</h1>
 
             {!isSignedInForm && <div>
-                <input type='text' placeholder='Full Name' className='text-black rounded-lg p-4 my-4 w-full'/>
+                <input ref={displayName} type='text' placeholder='Full Name' className='text-black rounded-lg p-4 my-4 w-full'/>
                 <input type='text' placeholder='Adress' className='text-black rounded-lg p-4 my-4 w-full'/>
             </div>}
 
             <input ref={email} type='text' placeholder='email' className='text-black rounded-lg p-4 my-4 w-full'/>
             <input ref={password} type='password' placeholder='Enter password' className='text-black rounded-lg p-4 my-4 w-full'/>
             
-            <p className='bg-black p-2 text-red-500 font-bold'>{errorMessage}</p>
+            <p className=' p-2 text-red-500 font-bold'>{errorMessage}</p>
             <button className='rounded-lg w-full bg-red-500 p-4 my-6' onClick={handleButtonClick} >SigIn</button>
 
             <p className='p-4 cursor-pointer' onClick={handleToggle}>{ isSignedInForm ? "Havent registered yet? Register now" : "Already Registered? Sign in now"}</p>
